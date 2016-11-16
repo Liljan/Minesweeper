@@ -1,7 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class Button : MonoBehaviour {
+public class Block : MonoBehaviour {
+
+    private bool isMine;
 
 	// Use this for initialization
 	void Start () {
