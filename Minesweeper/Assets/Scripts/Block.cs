@@ -1,6 +1,12 @@
 ﻿using UnityEngine;
 using System.Collections;
 
+
+public struct Mouse
+{
+    public static int LEFT = 0, RIGHT = 1;
+}
+
 public static class Grid
 {
     public static int w = 10, h = 13;
@@ -72,10 +78,14 @@ public static class Grid
 public class Block : MonoBehaviour
 {
     private bool isMine;
+    private bool isCovered = true;
+    private bool isFlagged = false;
 
     private SpriteRenderer spriteRenderer;
-    public Sprite[] emptyTextures;
-    public Sprite mineTexture;
+    public Sprite defaultSprite;
+    public Sprite flagSprite;
+    public Sprite mineSprite;
+    public Sprite[] numberSprite;
 
     private int indX, indY;
 
@@ -98,33 +108,63 @@ public class Block : MonoBehaviour
 
     public void SetSpriteMine()
     {
-        spriteRenderer.sprite = mineTexture;
+        spriteRenderer.sprite = mineSprite;
     }
 
     public void SetSpriteNumber(int adjacent)
     {
-        spriteRenderer.sprite = emptyTextures[adjacent];
+        spriteRenderer.sprite = numberSprite[adjacent];
     }
-    private void OnMouseUpAsButton()
+
+    public void SetSpriteFlag()
     {
-        Debug.Log(indX + " , " + indY);
+        spriteRenderer.sprite = flagSprite;
+    }
 
-        if (isMine)
+    public void SetSpriteDefault()
+    {
+        spriteRenderer.sprite = defaultSprite;
+    }
+
+
+    private void OnMouseOver()
+    {
+        if (Input.GetMouseButtonDown(Mouse.LEFT) && !isFlagged)
         {
-            Grid.UnCoverMines();
+            // Debug.Log(indX + " , " + indY);
 
-            Debug.Log("DEATH!");
+            isCovered = false;
+
+            if (isMine)
+            {
+                Grid.UnCoverMines();
+
+                Debug.Log("DEATH!");
+            }
+            else
+            {
+                SetSpriteNumber(Grid.AdjacentMines(indX, indY));
+
+                Grid.FloodFillUncover(indX, indY, new bool[Grid.w, Grid.h]);
+            }
         }
-        else
+        else if (Input.GetMouseButtonDown(Mouse.RIGHT))
         {
-            SetSpriteNumber(Grid.AdjacentMines(indX, indY));
-
-            Grid.FloodFillUncover(indX, indY, new bool[Grid.w, Grid.h]);
+            if (!isFlagged)
+            {
+                SetSpriteFlag();
+                isFlagged = true;
+            }
+            else
+            {
+                SetSpriteDefault();
+                isFlagged = false;
+            }
         }
     }
 
     public bool GetIsMine() { return isMine; }
-
+    public bool GetIsCovered() { return isCovered; }
 }
 
 
