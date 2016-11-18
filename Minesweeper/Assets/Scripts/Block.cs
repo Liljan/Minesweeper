@@ -1,82 +1,16 @@
 ﻿using UnityEngine;
 using System.Collections;
-
+using System;
 
 public struct Mouse
 {
     public static int LEFT = 0, RIGHT = 1;
 }
 
-public static class Grid
-{
-    public static int w = 10, h = 13;
-    public static Block[,] blocks = new Block[w, h];
-
-    public static void UnCoverMines()
-    {
-        foreach (Block b in blocks)
-        {
-            if (b.GetIsMine())
-            {
-                b.SetSpriteMine();
-            }
-        }
-    }
-
-    public static bool MineAt(int x, int y)
-    {
-        if (x >= 0 && y >= 0 && x < w && y < h)
-            return blocks[x, y].GetIsMine();
-
-        return false;
-    }
-
-    public static int AdjacentMines(int x, int y)
-    {
-        int count = 0;
-
-        if (MineAt(x - 1, y - 1)) ++count;
-        if (MineAt(x, y - 1)) ++count;
-        if (MineAt(x + 1, y - 1)) ++count;
-
-        if (MineAt(x - 1, y)) ++count;
-        if (MineAt(x + 1, y)) ++count;
-
-        if (MineAt(x - 1, y + 1)) ++count;
-        if (MineAt(x, y + 1)) ++count;
-        if (MineAt(x + 1, y + 1)) ++count;
-
-        Debug.Log(count);
-        return count;
-    }
-
-    public static void FloodFillUncover(int x, int y, bool[,] visited)
-    {
-        if (x >= 0 && y >= 0 && x < w && y < h)
-        {
-
-            if (visited[x, y])
-                return;
-
-            int adj = AdjacentMines(x, y);
-            blocks[x, y].SetSpriteNumber(adj);
-
-            if (adj > 0)
-                return;
-
-            // set visited
-            visited[x, y] = true;
-
-            FloodFillUncover(x - 1, y, visited);
-            FloodFillUncover(x + 1, y, visited);
-            FloodFillUncover(x, y - 1, visited);
-            FloodFillUncover(x, y + 1, visited);
-        }
-    }
-}
-
 public class Block : MonoBehaviour
 {
+    private Gamemanager gm;
+
     private bool isMine;
     private bool isCovered = true;
     private bool isFlagged = false;
@@ -92,12 +26,6 @@ public class Block : MonoBehaviour
     void Start()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
-
-        isMine = Random.value < 0.15f;
-
-        indX = (int)(transform.position.x);
-        indY = (int)(transform.position.y);
-        Grid.blocks[indX, indY] = this;
     }
 
     // Update is called once per frame
@@ -114,6 +42,15 @@ public class Block : MonoBehaviour
     public void SetSpriteNumber(int adjacent)
     {
         spriteRenderer.sprite = numberSprite[adjacent];
+        isCovered = false;
+    }
+
+    internal void Init(Gamemanager gm, int i, int j, bool isMine)
+    {
+        this.gm = gm;
+        indX = i;
+        indY = j;
+        this.isMine = isMine;
     }
 
     public void SetSpriteFlag()
@@ -126,29 +63,29 @@ public class Block : MonoBehaviour
         spriteRenderer.sprite = defaultSprite;
     }
 
-
     private void OnMouseOver()
     {
-        if (Input.GetMouseButtonDown(Mouse.LEFT) && !isFlagged)
+        if (Input.GetMouseButtonDown(Mouse.LEFT) && !isFlagged && isCovered)
         {
-            // Debug.Log(indX + " , " + indY);
-
-            isCovered = false;
-
             if (isMine)
             {
-                Grid.UnCoverMines();
+                gm.UnCoverMines();
 
                 Debug.Log("DEATH!");
             }
             else
             {
-                SetSpriteNumber(Grid.AdjacentMines(indX, indY));
+                SetSpriteNumber(gm.AdjacentMines(indX, indY));
 
-                Grid.FloodFillUncover(indX, indY, new bool[Grid.w, Grid.h]);
+                gm.FloodFillUncover(indX, indY, new bool[gm.w, gm.h]);
+
+                if (gm.IsFinished())
+                {
+                    Debug.Log("Victory. Dumbass.");
+                }
             }
         }
-        else if (Input.GetMouseButtonDown(Mouse.RIGHT))
+        else if (Input.GetMouseButtonDown(Mouse.RIGHT) && isCovered)
         {
             if (!isFlagged)
             {
