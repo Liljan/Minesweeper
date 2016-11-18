@@ -43,6 +43,30 @@ public static class Grid
         Debug.Log(count);
         return count;
     }
+
+    public static void FloodFillUncover(int x, int y, bool[,] visited)
+    {
+        if (x >= 0 && y >= 0 && x < w && y < h)
+        {
+
+            if (visited[x, y])
+                return;
+
+            int adj = AdjacentMines(x, y);
+            blocks[x, y].SetSpriteNumber(adj);
+
+            if (adj > 0)
+                return;
+
+            // set visited
+            visited[x, y] = true;
+
+            FloodFillUncover(x - 1, y, visited);
+            FloodFillUncover(x + 1, y, visited);
+            FloodFillUncover(x, y - 1, visited);
+            FloodFillUncover(x, y + 1, visited);
+        }
+    }
 }
 
 public class Block : MonoBehaviour
@@ -94,6 +118,8 @@ public class Block : MonoBehaviour
         else
         {
             SetSpriteNumber(Grid.AdjacentMines(indX, indY));
+
+            Grid.FloodFillUncover(indX, indY, new bool[Grid.w, Grid.h]);
         }
     }
 
